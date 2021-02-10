@@ -1,9 +1,9 @@
 const stages = [1, 2, 3];
 const types = new Map([
-    [1, 'Покупка городов'],
-    [2, 'Аукцион электростанций'],
-    [3, 'Покупка ресурсов'],
-    [4, 'Получение прибыли']
+    [1, 'Аукцион электростанций'],
+    [2, 'Покупка ресурсов'],
+    [3, 'Строительство'],
+    [4, 'Бюрократия']
 ]);
 var cities = ['Karamay', 'Wulumudi', 'Ku\'erle', 'Hami'];
 
@@ -30,6 +30,14 @@ if(localStorage.getItem('current_stage') === null) {
     }
     localStorage.setItem('users', users);
 
+    var money = [];
+    for(let i = 1; i <= localStorage.getItem('count_users'); i++) {
+        money.push(50);
+    }
+    localStorage.setItem('money', money);
+
+
+
     var user_cities = new Map();
     for (let i = 0; i <= users.length; i++) {
         user_cities.set(i + 1, [])
@@ -39,6 +47,11 @@ if(localStorage.getItem('current_stage') === null) {
     var json = JSON.stringify(myJson);
 
     localStorage.setItem('user_cities', json);
+
+
+    let time = new Date();
+    time = time.getHours() + ':' + time.getMinutes();
+    localStorage.setItem('time', time);
 }
 var users = [];
 for(let i = 1; i <= localStorage.getItem('count_users'); i++) {
@@ -50,6 +63,10 @@ function changeShowVars(){
     $('#stage').html(localStorage.getItem('current_stage'));
     $('#type').html(types.get(parseInt(localStorage.getItem('current_type'))));
     $('#user').html(localStorage.getItem('current_user'));
+    $('#round').html(localStorage.getItem('round'));
+
+    let money = localStorage.getItem('money').split(',')[localStorage.getItem('current_user') - 1];
+    $('#money').html(money);
 }
 
 function showUserCities() {
@@ -71,13 +88,17 @@ function hideUserCities() {
     $('#user-cities').html();
 }
 
-function showCities (){
+function showCities () {
     $('#cities').show();
     let options = '';
     for (let i = 0; i < cities.length; i++) {
         options = options + '<option id="city-' + i + '" value="' + i + '">' + cities[i] + '</option>';
     }
-    $('#cities').html('<select id="choose-city">' + options + '</select> <button type="button" class="btn btn-success" id="buy-city">Купить город</button>');
+    let tmp_select = '<select id="choose-city">' + options + '</select>';
+    let tmp_button = '<button type="button" class="btn btn-success buy-city" value="10">Купить 10</button>';
+    tmp_button = tmp_button +  '<button type="button" class="btn btn-success buy-city" value="15">Купить 15</button>';
+    tmp_button = tmp_button + '<button type="button" class="btn btn-success buy-city" value="20">Купить 20</button>';
+    $('#cities').html(tmp_select + tmp_button);
 }
 
 function hideCities (){
@@ -88,26 +109,51 @@ function hideCities (){
 function buyingCities(){
     showCities();
     showUserCities();
-    $('#buy-city').click(function (){
-        let city_id = $('#choose-city').val();
-        let jsoncitiestmp = JSON.parse(localStorage.getItem('user_cities'))['user_cities'][localStorage.getItem('current_user')];
+    $('.buy-city').click(function (){
+        //$(this).val()
+        let money = localStorage.getItem('money').split(',');
 
-        // let tmp_user_cities = user_cities.get(current_user);
-        let tmp_user_cities = jsoncitiestmp;
-        tmp_user_cities.push(cities[city_id]);
-        let jsontmp = JSON.parse(localStorage.getItem('user_cities'));
-        jsontmp['user_cities'][localStorage.getItem('current_user')] = tmp_user_cities;
-        localStorage.setItem('user_cities', JSON.stringify(jsontmp));
+        if(parseInt(money[localStorage.getItem('current_user') - 1]) >= $(this).val()) {
+            money[localStorage.getItem('current_user') - 1] = money[localStorage.getItem('current_user') - 1] - $(this).val();
+            $('#money').html(money[localStorage.getItem('current_user') - 1]);
+            localStorage.setItem('money', money);
 
-        showUserCities();
-        /* удаление после реализации городов по этапам */
-        //cities.splice(city_id, 1);
 
+
+            let city_id = $('#choose-city').val();
+            let jsoncitiestmp = JSON.parse(localStorage.getItem('user_cities'))['user_cities'][localStorage.getItem('current_user')];
+
+            // let tmp_user_cities = user_cities.get(current_user);
+            let tmp_user_cities = jsoncitiestmp;
+            tmp_user_cities.push(cities[city_id]);
+            let jsontmp = JSON.parse(localStorage.getItem('user_cities'));
+            jsontmp['user_cities'][localStorage.getItem('current_user')] = tmp_user_cities;
+            localStorage.setItem('user_cities', JSON.stringify(jsontmp));
+
+            showUserCities();
+            /* удаление после реализации городов по этапам */
+            //cities.splice(city_id, 1);
+
+        }
+        else {
+            alert('деняк нет, но вы держитесь');
+        }
     });
 }
 
-
 $( document ).ready(function (){
+    $('#time').html(localStorage.getItem('time'));
+    changeShowVars();
+    /* Buying cities */
+    if(localStorage.getItem('current_type') == 3) {
+        buyingCities();
+    }
+    else if (localStorage.getItem('current_type') == 4) {
+        hideCities();
+        hideUserCities();
+    }
+
+
     $('#next').click(function () {
         if (parseInt(localStorage.getItem('current_user')) + 1 <= users.length) {
             let tmp_user = parseInt(localStorage.getItem('current_user')) + 1;
@@ -127,10 +173,10 @@ $( document ).ready(function (){
         changeShowVars();
 
         /* Buying cities */
-        if(localStorage.getItem('current_type') == 1) {
+        if(localStorage.getItem('current_type') == 3) {
             buyingCities();
         }
-        else if (localStorage.getItem('current_type') == 2) {
+        else if (localStorage.getItem('current_type') == 4) {
             hideCities();
             hideUserCities();
         }
